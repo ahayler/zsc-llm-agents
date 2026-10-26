@@ -5,6 +5,9 @@ from typing import Union, List, Optional
 from core import CodePolicy
 from configs.envs import (
     EnvConfig,
+    DEFAULT_SELECTION_WITH_SEMANTICS_CONFIG,
+    DEFAULT_CONVENTIONS_WITH_SEMANTICS_CONFIG,
+    DEFAULT_TIGER_AND_TRAMPOLINE_CONFIG,
     DEFAULT_PERMUTED_LEVERS_CONFIG,
     DEFAULT_NARROW_TUNNEL_CONFIG_CODE,
     DEFAULT_AD_HOC_CONVENTIONS_CONFIG,
@@ -46,6 +49,9 @@ DEFAULT_ENV_CONFIGS = {
     "matrix_game": DEFAULT_MATRIX_GAME_CONFIG,
     "tiny_hanabi": DEFAULT_TINY_HANABI_CONFIG,
     "tiny_hanabi_fixed": DEFAULT_TINY_HANABI_FIXED_CONFIG,
+    "selection_with_semantics": DEFAULT_SELECTION_WITH_SEMANTICS_CONFIG,
+    "conventions_with_semantics": DEFAULT_CONVENTIONS_WITH_SEMANTICS_CONFIG,
+    "tiger_and_trampoline": DEFAULT_TIGER_AND_TRAMPOLINE_CONFIG,
 }
 
 

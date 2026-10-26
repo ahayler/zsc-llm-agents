@@ -13,6 +13,9 @@ from configs.envs import (
 	DEFAULT_MATRIX_GAME_CONFIG,
 	DEFAULT_TINY_HANABI_CONFIG,
 	DEFAULT_TINY_HANABI_FIXED_CONFIG,
+	DEFAULT_SELECTION_WITH_SEMANTICS_CONFIG,
+	DEFAULT_CONVENTIONS_WITH_SEMANTICS_CONFIG,
+	DEFAULT_TIGER_AND_TRAMPOLINE_CONFIG,
     DEFAULT_BRITTLE_BRIDGE_RANDOM_AGENTS_CONFIG,
 	EnvConfig,
 )
@@ -210,6 +213,33 @@ DEFAULT_XP_CONFIGS: dict[CoordinationGame, XPConfig] = {
 		env_name="TinyHanabiFixed",
 		env_name_file_safe="tiny_hanabi_fixed",
 		env_config=DEFAULT_TINY_HANABI_FIXED_CONFIG,
+		overwrites={
+			"trainer_config.num_game_runs": 100,
+			"evaluator_config.num_game_runs": 100,
+		}
+	),
+	CoordinationGame.SELECTION_WITH_SEMANTICS: XPConfig(
+		env_name="SelectionWithSemantics",
+		env_name_file_safe="selection_with_semantics",
+		env_config=DEFAULT_SELECTION_WITH_SEMANTICS_CONFIG,
+		overwrites={
+			"trainer_config.num_game_runs": 100,
+			"evaluator_config.num_game_runs": 100,
+		}
+	),
+	CoordinationGame.CONVENTIONS_WITH_SEMANTICS: XPConfig(
+		env_name="ConventionsWithSemantics",
+		env_name_file_safe="conventions_with_semantics",
+		env_config=DEFAULT_CONVENTIONS_WITH_SEMANTICS_CONFIG,
+		overwrites={
+			"trainer_config.num_game_runs": 100,
+			"evaluator_config.num_game_runs": 100,
+		}
+	),
+	CoordinationGame.TIGER_AND_TRAMPOLINE: XPConfig(
+		env_name="TigerAndTrampoline",
+		env_name_file_safe="tiger_and_trampoline",
+		env_config=DEFAULT_TIGER_AND_TRAMPOLINE_CONFIG,
 		overwrites={
 			"trainer_config.num_game_runs": 100,
 			"evaluator_config.num_game_runs": 100,

@@ -17,6 +17,8 @@ from envs.matrix_game import MatrixGame
 from envs.narrow_tunnel import NarrowTunnel
 from envs.permuted_levers import PermutedLevers
 from envs.tiger_and_trampoline import TigerAndTrampoline
+from envs.selection_with_semantics import SelectionWithSemantics
+from envs.conventions_with_semantics import ConventionsWithSemantics
 from envs.tiny_hanabi import TinyHanabi
 from envs.tiny_hanabi_fixed import TinyHanabiFixed
 from envs.action_features.hint_guess import HintGuess
@@ -46,6 +48,8 @@ _ENV_REGISTRY = {
     "narrow_tunnel": NarrowTunnel,
     "permuted_levers": PermutedLevers,
     "tiger_and_trampoline": TigerAndTrampoline,
+    "selection_with_semantics": SelectionWithSemantics,
+    "conventions_with_semantics": ConventionsWithSemantics,
     "tiny_hanabi": TinyHanabi,
     "tiny_hanabi_fixed": TinyHanabiFixed,
     "hint_guess": HintGuess,
@@ -127,6 +131,8 @@ __all__ = [
     "NarrowTunnel",
     "PermutedLevers",
     "TigerAndTrampoline",
+    "SelectionWithSemantics",
+    "ConventionsWithSemantics",
     "TinyHanabi",
     "TinyHanabiFixed",
     "HintGuess",

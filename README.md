@@ -43,6 +43,7 @@ make run-text-xp ARGS="--suite cat_dog_xp"                           # four mode
 make run-text-xp ARGS="--suite hanabi --conditions baseline"         # 3x3 Hanabi, one life, three hints
 make run-text-xp ARGS="--suite hint_guess --conditions baseline"
 make run-code-xp ARGS="--suite hint_guess --conditions baseline"     # six matrices, 100 episodes per cell
+make run-code-xp ARGS="--suite semantic --conditions baseline"       # semantic selection / convention games and Trampoline Tiger
 ```
 
 `src/configs/paper.py` holds the model lists, CFD texts, episode counts and failure thresholds used in the paper. An episode counts as a coordination failure if its return is at or below the environment's threshold. Text results save failure rates in `additional_info.json`, code results in `failure_rates_<matrix>.json`.

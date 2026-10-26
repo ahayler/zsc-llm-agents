@@ -1,7 +1,7 @@
 from typing import Union
 from envs.base import Env
 from configs.envs import (
-    EnvConfig, 
+    EnvConfig, SelectionWithSemanticsConfig, ConventionsWithSemanticsConfig, TigerAndTrampolineConfig, 
     BrittleBridgeConfig, 
     CatAndDogConfig, 
     CatAndDog2Config,
@@ -40,6 +40,9 @@ from envs.tiny_hanabi_fixed import TinyHanabiFixed
 from envs.action_features.hint_guess import HintGuess
 from envs.action_features.hint_guess_implicatures import HintGuessImplicatures
 from envs.hanabi.hanabi_text_env import HanabiTextEnv
+from envs.selection_with_semantics import SelectionWithSemantics
+from envs.conventions_with_semantics import ConventionsWithSemantics
+from envs.tiger_and_trampoline import TigerAndTrampoline
 
 def get_env_impl_from_config(env_config: EnvConfig) -> type[Env]:
     """
@@ -90,6 +93,12 @@ def get_env_impl_from_config(env_config: EnvConfig) -> type[Env]:
         return HintGuessImplicatures
     elif isinstance(env_config, HintGuessConfig):
         return HintGuess
+    elif isinstance(env_config, SelectionWithSemanticsConfig):
+        return SelectionWithSemantics
+    elif isinstance(env_config, ConventionsWithSemanticsConfig):
+        return ConventionsWithSemantics
+    elif isinstance(env_config, TigerAndTrampolineConfig):
+        return TigerAndTrampoline
     else:
         raise ValueError(f"Unknown environment config type: {type(env_config)}")
 
@@ -134,6 +143,12 @@ def get_env_name_from_config(env_config: EnvConfig) -> str:
         return "HintGuessImplicatures"
     elif isinstance(env_config, HintGuessConfig):
         return "HintGuess"
+    elif isinstance(env_config, SelectionWithSemanticsConfig):
+        return "SelectionWithSemantics"
+    elif isinstance(env_config, ConventionsWithSemanticsConfig):
+        return "ConventionsWithSemantics"
+    elif isinstance(env_config, TigerAndTrampolineConfig):
+        return "TigerAndTrampoline"
     else:
         raise ValueError(f"Unknown environment config type: {type(env_config)}")
 
@@ -205,6 +220,12 @@ def get_env_name_file_save_from_config(env_config: Union[EnvConfig, XPConfig]) -
         return "hint_guess_implicatures"
     elif isinstance(env_config, HintGuessConfig):
         return "hint_guess"
+    elif isinstance(env_config, SelectionWithSemanticsConfig):
+        return "selection_with_semantics"
+    elif isinstance(env_config, ConventionsWithSemanticsConfig):
+        return "conventions_with_semantics"
+    elif isinstance(env_config, TigerAndTrampolineConfig):
+        return "tiger_and_trampoline"
     else:
         raise ValueError(f"Unknown environment config type: {type(env_config)}")
 

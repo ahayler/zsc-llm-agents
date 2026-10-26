@@ -24,6 +24,9 @@ class CoordinationGame(Enum):
     HINT_GUESS = "hint_guess"
     HINT_GUESS_IMPLICATURES = "hint_guess_implicatures"
     HANABI_TEXT = "hanabi_text"
+    SELECTION_WITH_SEMANTICS = "selection_with_semantics"
+    CONVENTIONS_WITH_SEMANTICS = "conventions_with_semantics"
+    TIGER_AND_TRAMPOLINE = "tiger_and_trampoline"
 
 class EnvConfig(BaseModel):
     policy_modifier_config: BasePolicyModifierConfig = NoPolicyModifierConfig()
@@ -35,6 +38,12 @@ class PermutedLeversConfig(EnvConfig):
 class NarrowTunnelConfig(EnvConfig):
     template: List[Literal["n", "w"]]
     max_turns: int
+
+class SelectionWithSemanticsConfig(EnvConfig):
+    num_levers: int
+
+class ConventionsWithSemanticsConfig(EnvConfig):
+    pass
 
 class TigerAndTrampolineConfig(EnvConfig):
     p_tiger: float
@@ -138,6 +147,12 @@ DEFAULT_NARROW_TUNNEL_CONFIG_TEXT = NarrowTunnelConfig(
 DEFAULT_TIGER_AND_TRAMPOLINE_CONFIG = TigerAndTrampolineConfig(
     p_tiger=0.5
 )
+
+DEFAULT_SELECTION_WITH_SEMANTICS_CONFIG = SelectionWithSemanticsConfig(
+    num_levers=10,
+)
+
+DEFAULT_CONVENTIONS_WITH_SEMANTICS_CONFIG = ConventionsWithSemanticsConfig()
 
 DEFAULT_BRITTLE_BRIDGE_CONFIG_CODE = BrittleBridgeConfig(
     bridge_length=5,

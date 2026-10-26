@@ -218,6 +218,8 @@ def main():
         DEFAULT_BRITTLE_BRIDGE_CONFIG_CODE, DEFAULT_NARROW_TUNNEL_CONFIG_CODE,
         DEFAULT_PERMUTED_LEVERS_CONFIG, DEFAULT_MATRIX_GAME_CONFIG,
         DEFAULT_HINT_GUESS_CONFIG,
+        DEFAULT_SELECTION_WITH_SEMANTICS_CONFIG, DEFAULT_CONVENTIONS_WITH_SEMANTICS_CONFIG,
+        DEFAULT_TIGER_AND_TRAMPOLINE_CONFIG,
     )
     from configs.paper import (
         CORE_CODE_MODELS, CFD_TRANSFER_MODELS, HANABI_HINT_GUESS_MODELS,
@@ -226,7 +228,7 @@ def main():
     from utils.env_impl import get_env_name_file_save_from_config
 
     parser = argparse.ArgumentParser(description="Paper code-agent experiments")
-    parser.add_argument("--suite", choices=("core", "hint_guess"), default="core")
+    parser.add_argument("--suite", choices=("core", "hint_guess", "semantic"), default="core")
     parser.add_argument("--conditions", nargs="+", choices=tuple(CODE_CFDS), default=["baseline", "handcrafted"])
     args = parser.parse_args()
     env_configs = [
@@ -235,7 +237,10 @@ def main():
         DEFAULT_TINY_HANABI_CONFIG, DEFAULT_TINY_HANABI_FIXED_CONFIG,
         DEFAULT_BRITTLE_BRIDGE_CONFIG_CODE, DEFAULT_NARROW_TUNNEL_CONFIG_CODE,
         DEFAULT_PERMUTED_LEVERS_CONFIG, DEFAULT_MATRIX_GAME_CONFIG,
-    ] if args.suite == "core" else [DEFAULT_HINT_GUESS_CONFIG]
+    ] if args.suite == "core" else [
+        DEFAULT_SELECTION_WITH_SEMANTICS_CONFIG, DEFAULT_CONVENTIONS_WITH_SEMANTICS_CONFIG,
+        DEFAULT_TIGER_AND_TRAMPOLINE_CONFIG,
+    ] if args.suite == "semantic" else [DEFAULT_HINT_GUESS_CONFIG]
 
     for condition in args.conditions:
         names = (
