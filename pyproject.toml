@@ -1,0 +1,42 @@
+[project]
+name = "zsc_llm"
+version = "0.0.1"
+authors = [
+  { name="Adrian Hayler" }, { name="Shashank Reddy" }, { name="Andrei Lupu" }, { name="Johannes Forkel" },
+  { name="Bidipta Sarkar" }, { name="Siheng Feng" }, { name="Jakob Foerster" },
+]
+description = "Code for the NeurIPS 2026 paper \"Zero-Shot Coordination among LLM Agents\""
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+readme = "README.md"
+requires-python = ">=3.11"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "numpy<2",
+  "anthropic",
+  "rich",
+  "scipy",
+  "tabulate",
+  "google-genai",
+  "matplotlib",
+  "seaborn",
+  "pydantic",
+  "pandas",
+  "openai",
+  "langfuse==3.3.0",
+  "python-dotenv",
+  "wandb",
+  "huggingface_hub",
+  "plotly",
+  "scikit-learn",
+  "jaxmarl"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]                   
+

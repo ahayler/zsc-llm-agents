@@ -1,0 +1,25 @@
+# Environment variables
+.env
+data/
+.vscode/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python distribution / packaging
+*.egg-info/
+dist/
+build/
+
+.DS_Store
+
+wandb/
+# Experiment outputs
+logs/
+
+# Caches written when the container uses the repo as home
+.cache/
+.config/
+.local/

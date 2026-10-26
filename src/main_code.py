@@ -1,0 +1,269 @@
+from typing import List, Optional, Tuple
+import numpy as np
+from langfuse import observe
+import json
+from pathlib import Path
+
+from llm.request import LLMType
+from core import CodePolicy
+from configs.envs import EnvConfig
+from train.generate_policy import generate_policy
+from train.xp_eval import CodeXPEvaluator
+from configs.configs import (
+    CodeXPEvaluatorConfig,
+    DEFAULT_CODE_POLICY_AGENT_CONFIG_FACTORY,
+    DEFAULT_CODE_POLICY_GENERATOR_CONFIG,
+)
+from utils.tracing import langfuse_client
+from utils.metrics import paper_failure_report
+from utils.env_impl import get_env_name_file_save_from_config
+
+def save_matrix_and_policies(save_dir: Path, idx: int, xp_matrix: np.ndarray, policies: List[CodePolicy], llms: List[LLMType]):
+    """Saves XP matrix and policies for a single iteration."""
+    save_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Save Matrix
+    with open(save_dir / f"xp_matrix_{idx}.json", "w") as f:
+        json.dump(xp_matrix.tolist(), f)
+    
+    # Save Policies
+    policies_data = []
+    for policy, llm in zip(policies, llms):
+        policies_data.append({
+            "llm": str(llm),
+            "name": policy.name,
+            "joint_policy": policy.joint_policy
+        })
+        
+    with open(save_dir / f"policies_{idx}.json", "w") as f:
+        json.dump(policies_data, f, indent=2)
+
+@observe(name="generate_policies_batch")
+def _generate_policies_batch(
+    env_config: EnvConfig,
+    llms: List[LLMType],
+    cfd: str,
+    experiment_name: str,
+    self_critic: bool,
+    max_tokens: Optional[int],
+    temperature: float,
+) -> List[CodePolicy]:
+    policies = []
+    for llm in llms:
+        MAX_RETRIES = 3
+        for _ in range(MAX_RETRIES):
+            try:
+                llm_config = DEFAULT_CODE_POLICY_GENERATOR_CONFIG.llm_config.model_copy(
+                    update={
+                        "model": llm,
+                        "temperature": float(temperature),
+                        **(
+                            {"max_tokens": max_tokens}
+                            if max_tokens is not None
+                            else {}
+                        ),
+                    }
+                )
+                generator_config = DEFAULT_CODE_POLICY_GENERATOR_CONFIG.model_copy(
+                    update={
+                        "llm_config": llm_config,
+                        "use_self_critic": self_critic,
+                        "n_generations_per_seed": 1,
+                        "num_policies": 1,
+                    }
+                )
+                generated = generate_policy(
+                    cfd=cfd,
+                    env=env_config,
+                    num_policies=1,
+                    llm=llm,
+                    generator_config=generator_config,
+                    langfuse_session_id=experiment_name,
+                    n_generations_per_seed=1,
+                    use_self_critic=self_critic,
+                    max_tokens=max_tokens
+                )
+                break
+            except Exception as e:
+                print(f"  Error generating policy with {llm}: {e}")
+                continue
+        else:
+            print(f" Failed to generate policy for {llm} after {MAX_RETRIES} retries")
+            raise ValueError(f"Failed to generate policy for {llm} after {MAX_RETRIES} retries")
+        
+        policies.append(generated[0])
+    return policies
+
+@observe(name="evaluate_xp_matrix")
+def _evaluate_xp_matrix(
+    env_config: EnvConfig,
+    policies: List[CodePolicy],
+    num_game_runs: int,
+    failure_save_path: Optional[Path] = None,
+) -> np.ndarray:
+    print(f"  Evaluating {len(policies)}x{len(policies)} XP grid...")
+    evaluator_config = CodeXPEvaluatorConfig(
+        agent_config_factory=DEFAULT_CODE_POLICY_AGENT_CONFIG_FACTORY,
+        num_game_runs=num_game_runs,
+        num_agents=2,
+    )
+    evaluator_config.env_config = env_config
+
+    xp_evaluator = CodeXPEvaluator(evaluator_config)
+    
+    # eval_grid returns (xp_matrix, detailed_results)
+    xp_matrix, histories = xp_evaluator.eval_grid(policies, policies, no_progress_bar=False)
+    report = paper_failure_report(get_env_name_file_save_from_config(env_config), histories)
+    if failure_save_path is not None and report is not None:
+        failure_save_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(failure_save_path, "w") as f:
+            json.dump(report, f, indent=2)
+    return xp_matrix
+
+@observe()
+def generate_llm_xp_matrices(
+    env_config: EnvConfig,
+    llms: List[LLMType],
+    n_xp_matrices: int,
+    cfd: str,
+    self_critic: bool,
+    num_game_runs: int = 10,
+    experiment_name: str = "llm_xp_evaluation_code",
+    save_path: Optional[str] = None,
+    max_tokens: Optional[int] = None,
+    temperature: float = DEFAULT_CODE_POLICY_GENERATOR_CONFIG.llm_config.temperature,
+) -> Tuple[List[np.ndarray], List[List[CodePolicy]]]:
+    """
+    Generates n_xp_matrices where each matrix is an XP evaluation of policies generated by different LLMs.
+    For each matrix:
+    1. One policy is generated from each LLM in the list.
+    2. These policies are evaluated against each other in a grid (XP matrix).
+    
+    Returns:
+        Tuple containing:
+        - List of XP matrices (np.ndarray)
+        - List of lists of CodePolicy objects (the policies used for each matrix)
+    """
+    if experiment_name:
+        langfuse_client.update_current_trace(session_id=experiment_name)
+
+    all_matrices = []
+    all_policies_lists = []
+    
+    if save_path:
+        base_save_dir = Path(save_path) / experiment_name
+        print(f"Saving results to {base_save_dir}")
+    else:
+        base_save_dir = None
+
+    max_matrix_retries = 2
+    for i in range(n_xp_matrices):
+        print(f"Generating XP Matrix {i+1}/{n_xp_matrices}...")
+        for attempt in range(max_matrix_retries + 1):
+            try:
+                # 1. Generate policies (wrapped in span)
+                policies = _generate_policies_batch(
+                    env_config=env_config,
+                    llms=llms,
+                    cfd=cfd,
+                    experiment_name=experiment_name,
+                    self_critic=self_critic,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                )
+
+                # 2. Evaluate XP Matrix (wrapped in span)
+                xp_matrix = _evaluate_xp_matrix(
+                    env_config=env_config,
+                    policies=policies,
+                    num_game_runs=num_game_runs,
+                    failure_save_path=base_save_dir / f"failure_rates_{i}.json" if base_save_dir else None,
+                )
+
+                if np.isnan(xp_matrix).any():
+                    raise ValueError("XP matrix contains NaN values")
+
+                all_policies_lists.append(policies)
+                all_matrices.append(xp_matrix)
+
+                if base_save_dir:
+                    save_matrix_and_policies(base_save_dir, i, xp_matrix, policies, llms)
+
+                langfuse_client.update_current_span(
+                    metadata={
+                        f"xp_matrix_{i}": xp_matrix.tolist(),
+                        "llms": [str(llm) for llm in llms]
+                    }
+                )
+                print(f"  Matrix {i+1} complete:\n{xp_matrix}")
+                break
+            except Exception as e:
+                if attempt < max_matrix_retries:
+                    print(
+                        f"  Error creating matrix {i+1} (attempt {attempt + 1}): {e}. Retrying..."
+                    )
+                    continue
+                print(f" Failed to create matrix {i+1} after {max_matrix_retries} retries")
+                raise
+
+    return all_matrices, all_policies_lists
+
+def main():
+    import argparse
+    import datetime
+    from configs.envs import (
+        CatAndDogConfig, DEFAULT_AD_HOC_CONVENTIONS_CONFIG,
+        DEFAULT_AD_HOC_CONVENTIONS_PERMUTED_SIGNALS_CONFIG,
+        DEFAULT_TINY_HANABI_CONFIG, DEFAULT_TINY_HANABI_FIXED_CONFIG,
+        DEFAULT_BRITTLE_BRIDGE_CONFIG_CODE, DEFAULT_NARROW_TUNNEL_CONFIG_CODE,
+        DEFAULT_PERMUTED_LEVERS_CONFIG, DEFAULT_MATRIX_GAME_CONFIG,
+        DEFAULT_HINT_GUESS_CONFIG,
+    )
+    from configs.paper import (
+        CORE_CODE_MODELS, CFD_TRANSFER_MODELS, HANABI_HINT_GUESS_MODELS,
+        CODE_XP_MATRICES, CODE_EPISODES, CODE_CFDS,
+    )
+    from utils.env_impl import get_env_name_file_save_from_config
+
+    parser = argparse.ArgumentParser(description="Paper code-agent experiments")
+    parser.add_argument("--suite", choices=("core", "hint_guess"), default="core")
+    parser.add_argument("--conditions", nargs="+", choices=tuple(CODE_CFDS), default=["baseline", "handcrafted"])
+    args = parser.parse_args()
+    env_configs = [
+        CatAndDogConfig(), DEFAULT_AD_HOC_CONVENTIONS_CONFIG,
+        DEFAULT_AD_HOC_CONVENTIONS_PERMUTED_SIGNALS_CONFIG,
+        DEFAULT_TINY_HANABI_CONFIG, DEFAULT_TINY_HANABI_FIXED_CONFIG,
+        DEFAULT_BRITTLE_BRIDGE_CONFIG_CODE, DEFAULT_NARROW_TUNNEL_CONFIG_CODE,
+        DEFAULT_PERMUTED_LEVERS_CONFIG, DEFAULT_MATRIX_GAME_CONFIG,
+    ] if args.suite == "core" else [DEFAULT_HINT_GUESS_CONFIG]
+
+    for condition in args.conditions:
+        names = (
+            HANABI_HINT_GUESS_MODELS if args.suite == "hint_guess"
+            else CFD_TRANSFER_MODELS if condition == "learned" else CORE_CODE_MODELS
+        )
+        for env_config in env_configs:
+            env_name = get_env_name_file_save_from_config(env_config)
+            experiment_name = (
+                f"paper_code_{args.suite}_{condition}_{env_name}_"
+                f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+            )
+            matrices, policies = generate_llm_xp_matrices(
+                env_config=env_config,
+                llms=[LLMType[name] for name in names],
+                n_xp_matrices=CODE_XP_MATRICES,
+                cfd=CODE_CFDS[condition],
+                self_critic=False,
+                num_game_runs=CODE_EPISODES,
+                experiment_name=experiment_name,
+                save_path=Path(__file__).parent.parent / "data" / "code",
+                max_tokens=10000,
+                temperature=0.0,
+            )
+            if matrices:
+                print("Average XP Matrix across all runs:")
+                print(np.mean(matrices, axis=0))
+
+
+if __name__ == "__main__":
+    main()

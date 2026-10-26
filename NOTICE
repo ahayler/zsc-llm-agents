@@ -1,0 +1,7 @@
+Zero-Shot Coordination among LLM Agents
+Copyright 2026 The Authors
+
+This product includes software developed as part of JaxMARL
+(https://github.com/FLAIROx/JaxMARL), Copyright 2023 FLAIR, licensed under the
+Apache License, Version 2.0. The files src/envs/hanabi/hanabi.py and
+src/envs/hanabi/hanabi_game.py are adapted from JaxMARL and have been modified.
